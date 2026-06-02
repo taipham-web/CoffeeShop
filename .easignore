@@ -1,0 +1,7 @@
+Library/
+node_modules/
+.git/
+android/
+ios/
+server/
+admin-web/
