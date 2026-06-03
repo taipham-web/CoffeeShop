@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:match*",
+      "destination": "http://103.72.99.67:5001/:match*"
+    },
+    {
+      "source": "/socket.io/:match*",
+      "destination": "http://103.72.99.67:5001/socket.io/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
