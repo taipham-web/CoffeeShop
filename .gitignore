@@ -51,3 +51,5 @@ app-example
 # Chặn các file rác hệ thống vô tình lọt vào
 Library/
 .android/
+server/
+admin-web/

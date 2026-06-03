@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Khi chạy localhost sẽ gọi thẳng IP. Khi build lên Vercel sẽ gọi qua '/api' để proxy
-  baseURL: import.meta.env.PROD ? '/api' : 'http://103.72.99.67:5001',
+  // Khi chạy dev sẽ gọi IP thẳng, khi build lên VPS sẽ gọi relative
+  baseURL: import.meta.env.PROD ? '/' : 'http://103.72.99.67:5001',
 });
 
 api.interceptors.request.use((config) => {

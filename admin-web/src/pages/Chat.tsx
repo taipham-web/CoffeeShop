@@ -46,7 +46,7 @@ export default function Chat() {
   useEffect(() => {
     fetchUsers();
     
-    // Initialize socket (use root for Vercel proxy)
+    // Initialize socket (use root when served from VPS)
     const socketUrl = import.meta.env.PROD ? undefined : 'http://103.72.99.67:5001';
     socketRef.current = io(socketUrl);
 

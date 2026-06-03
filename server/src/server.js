@@ -14,6 +14,7 @@ const profileRoutes = require("./routes/profile");
 const orderRoutes = require("./routes/orders");
 const cartRoutes = require("./routes/cart");
 const Chat = require("./models/Chat");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +42,8 @@ app.use("/upload", uploadRoutes);
 app.use("/profile", profileRoutes);
 app.use("/orders", orderRoutes);
 app.use("/cart", cartRoutes);
+
+
 app.use("/wishlist", require("./routes/wishlist"));
 app.use("/banners", require("./routes/banners"));
 app.use("/branches", require("./routes/branches"));
@@ -82,6 +85,13 @@ io.on("connection", (socket) => {
   });
 });
 
+// --- Cấu hình Serve Frontend Admin Web ---
+const adminDistPath = path.join(__dirname, "../../admin-web/dist");
+app.use(express.static(adminDistPath));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(adminDistPath, "index.html"));
+});
+
 async function startServer() {
   if (!process.env.JWT_SECRET) {
     throw new Error("Missing JWT_SECRET in environment variables.");
@@ -103,3 +113,4 @@ startServer().catch((error) => {
   console.error("Failed to start server:", error.message);
   process.exit(1);
 });
+
