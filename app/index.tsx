@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
 
         <View style={styles.card}>
           <Image
-            source={require("../assets/images/welcome_illustration.png")}
+            source={require("../assets/images/welcome_illustration.jpg")}
             style={styles.illustration}
             resizeMode="contain"
           />

@@ -97,6 +97,30 @@ export default function OrderScreen() {
   const handleOrder = async () => {
     if (!cart) return;
 
+    if (!profile.name || !profile.phone || !profile.address) {
+      Alert.alert(
+        "Thiếu thông tin cá nhân",
+        "Vui lòng cập nhật đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng trong trang cá nhân trước khi đặt hàng.",
+        [
+          { text: "Đóng", style: "cancel" },
+          { text: "Cập nhật ngay", onPress: () => router.push("/profile") }
+        ]
+      );
+      return;
+    }
+
+    if (!/^(03|05|07|08|09)\d{8}$/.test(profile.phone.replace(/\s+/g, ""))) {
+      Alert.alert(
+        "Số điện thoại không hợp lệ",
+        "Số điện thoại của bạn không đúng định dạng. Vui lòng cập nhật lại trong trang cá nhân.",
+        [
+          { text: "Đóng", style: "cancel" },
+          { text: "Cập nhật ngay", onPress: () => router.push("/profile") }
+        ]
+      );
+      return;
+    }
+
     try {
       setOrdering(true);
       

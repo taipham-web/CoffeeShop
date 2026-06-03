@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -45,9 +44,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --------------- Location ---------------
-  const [locationText, setLocationText] = useState("Đang lấy vị trí…");
-  const [locationLoading, setLocationLoading] = useState(true);
+
 
   // --------------- Toast State ---------------
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -72,73 +69,7 @@ export default function HomeScreen() {
     });
   };
 
-  // --------------- Get current location ---------------
-  const getLocation = useCallback(async () => {
-    try {
-      setLocationLoading(true);
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setLocationText("Không có quyền truy cập");
-        return;
-      }
-
-      // Bước 1: Thử lấy vị trí đã cache (nhanh, không treo)
-      let loc = await Location.getLastKnownPositionAsync({
-        maxAge: 5 * 60 * 1000,  // Cache tối đa 5 phút
-        requiredAccuracy: 5000, // Sai số tối đa 5km
-      });
-
-      // Bước 2: Nếu không có cache → dùng getCurrentPositionAsync với timeout 8 giây
-      if (!loc) {
-        const timeoutPromise = new Promise<null>((resolve) =>
-          setTimeout(() => resolve(null), 8000)
-        );
-        const freshPromise = Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Low, // Low = nhanh, ít tốn pin
-        });
-        const result = await Promise.race([freshPromise, timeoutPromise]);
-        if (!result) {
-          setLocationText("Không xác định được vị trí");
-          return;
-        }
-        loc = result;
-      }
-
-      // Bước 3: Chuyển tọa độ → tên địa điểm
-      const results = await Location.reverseGeocodeAsync({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
-
-      if (results.length > 0) {
-        const place = results[0];
-        
-        // Kết hợp số nhà và tên đường
-        const streetInfo = [place.streetNumber, place.street].filter(Boolean).join(" ");
-        const fallbackStreet = streetInfo || place.name;
-
-        const addressParts = [
-          fallbackStreet,
-          place.district || place.subregion,
-          place.city || place.region,
-        ].filter(Boolean);
-
-        // Loại bỏ các thành phần trùng lặp (hay xảy ra giữa iOS và Android)
-        const uniqueParts = [...new Set(addressParts)];
-        
-        setLocationText(
-          uniqueParts.length > 0 ? uniqueParts.join(", ") : (place.country ?? "Unknown")
-        );
-      } else {
-        setLocationText("Không xác định");
-      }
-    } catch {
-      setLocationText("Không lấy được vị trí");
-    } finally {
-      setLocationLoading(false);
-    }
-  }, []);
 
   // --------------- Fetch categories ---------------
   const loadCategories = useCallback(async () => {
@@ -164,7 +95,6 @@ export default function HomeScreen() {
 
   // --------------- Initial load ---------------
   useEffect(() => {
-    getLocation();
     (async () => {
       setLoading(true);
       const [fetchedBanners] = await Promise.all([fetchBanners(), loadCategories(), loadProducts(activeCategory)]);
@@ -210,27 +140,29 @@ export default function HomeScreen() {
       {/* Dark Header */}
       <View style={styles.darkHeader}>
         <View style={styles.headerRow}>
-          <View style={styles.locationBlock}>
-            <Text style={styles.locationLabel}>Vị trí</Text>
-            <TouchableOpacity style={styles.locationPicker} onPress={getLocation}>
-              {locationLoading ? (
-                <ActivityIndicator size="small" color="#C67C4E" style={{ marginRight: 6 }} />
+          {/* Left: Avatar & Greeting */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <TouchableOpacity style={styles.avatarWrap} onPress={() => router.push("/profile")}>
+              {profile.avatarUrl ? (
+                <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
               ) : (
-                <>
-                  <Text style={styles.locationCity} numberOfLines={1}>{locationText}</Text>
-                  <Ionicons name="chevron-down" size={14} color="#DFDFDF" style={{ marginLeft: 4 }} />
-                </>
+                <View style={[styles.avatar, { justifyContent: "center", alignItems: "center", backgroundColor: "#333" }]}>
+                  <Ionicons name="person" size={20} color="#C67C4E" />
+                </View>
               )}
             </TouchableOpacity>
+            <View>
+              <Text style={{ fontSize: 13, color: "#A0A0A0" }}>Xin chào,</Text>
+              <Text style={{ fontSize: 16, color: "#FFFFFF", fontWeight: "600" }}>{profile.name || "Khách hàng"}</Text>
+            </View>
           </View>
-          <TouchableOpacity style={styles.avatarWrap} onPress={() => router.push("/profile")}>
-            {profile.avatarUrl ? (
-              <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, { justifyContent: "center", alignItems: "center", backgroundColor: "#333" }]}>
-                <Ionicons name="person" size={20} color="#C67C4E" />
-              </View>
-            )}
+
+          {/* Right: Notifications */}
+          <TouchableOpacity 
+            style={{ width: 44, height: 44, justifyContent: "center", alignItems: "center", backgroundColor: "#1E1E1E", borderRadius: 14 }}
+            onPress={() => router.push("/(tab)/notice")}
+          >
+            <Ionicons name="notifications-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
@@ -430,22 +362,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 18,
   },
-  locationBlock: {},
-  locationLabel: {
-    fontSize: 12,
-    color: "#A0A0A0",
-    fontWeight: "400",
-    marginBottom: 2,
-  },
-  locationPicker: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationCity: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
+
   avatarWrap: {
     width: 44,
     height: 44,

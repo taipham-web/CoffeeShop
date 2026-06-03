@@ -1,9 +1,48 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet } from "react-native";
+import { registerForPushNotificationsAsync } from "../../services/notifications";
+import Constants, { ExecutionEnvironment } from "expo-constants";
+
+let Notifications: any;
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+if (!isExpoGo) {
+  try {
+    Notifications = require("expo-notifications");
+  } catch (e) {
+    console.warn("Push notifications are not supported in Expo Go.");
+  }
+}
 
 export default function TabLayout() {
+  const notificationListener = useRef<any>(undefined);
+  const responseListener = useRef<any>(undefined);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+
+    // This listener is fired whenever a notification is received while the app is foregrounded
+    if (Notifications) {
+      notificationListener.current = Notifications.addNotificationReceivedListener((notification: any) => {
+        // You could update a global state or badge here if needed
+        console.log("Notification received:", notification);
+      });
+
+      // This listener is fired whenever a user taps on or interacts with a notification 
+      responseListener.current = Notifications.addNotificationResponseReceivedListener((response: any) => {
+        console.log("Notification tapped:", response);
+        // Depending on response.notification.request.content.data.type, you could navigate to specific screens
+      });
+    }
+
+    return () => {
+      if (notificationListener.current && Notifications) notificationListener.current.remove();
+      if (responseListener.current && Notifications) responseListener.current.remove();
+    };
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -74,18 +113,26 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 5. Tab Bell (Chuông thông báo) */}
+      {/* 5. Tab Chat */}
       <Tabs.Screen
-        name="notice"
+        name="chat"
         options={{
-          title: "Thông báo",
+          title: "Chat",
           tabBarIcon: ({ color, focused }) => (
-            <MaterialCommunityIcons
-              name={focused ? "bell" : "bell-outline"}
-              size={28}
+            <Ionicons
+              name={focused ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"}
+              size={26}
               color={color}
             />
           ),
+        }}
+      />
+
+      {/* 6. Tab Bell (Chuông thông báo) - Ẩn khỏi bottom bar */}
+      <Tabs.Screen
+        name="notice"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

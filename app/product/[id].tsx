@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -14,8 +14,8 @@ import {
   View,
 } from "react-native";
 import { useWishlist } from "../../context/WishlistContext";
-import { fetchProductById, Product } from "../../services/product";
 import { addToCart } from "../../services/cart";
+import { fetchProductById, Product } from "../../services/product";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = width * 0.72;
@@ -160,7 +160,7 @@ export default function ProductDetailScreen() {
           {/* Size */}
           {product.sizes && product.sizes.length > 0 && (
             <>
-              <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Kích thước</Text>
+              <Text style={[styles.sectionLabel, { marginTop: 20 }]}>Size</Text>
               <View style={styles.sizeRow}>
                 {product.sizes.map((s) => (
                   <TouchableOpacity

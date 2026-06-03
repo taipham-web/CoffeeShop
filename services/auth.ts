@@ -55,9 +55,9 @@ async function postAuth(
       },
       body: JSON.stringify(payload),
     });
-  } catch {
+  } catch (error: any) {
     throw new Error(
-      "Cannot reach auth server. Check server is running and EXPO_PUBLIC_API_URL points to your machine IP.",
+      `Cannot reach auth server. Check server is running and EXPO_PUBLIC_API_URL points to your machine IP. \nOriginal error: ${error?.message || JSON.stringify(error)}`,
     );
   }
 

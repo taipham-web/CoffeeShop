@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useProfile } from "../context/ProfileContext";
 import { uploadAvatar } from "../services/upload";
+import auth from "@react-native-firebase/auth";
 
 // ── Types for Custom Modal ──
 export type ModalConfig = {
@@ -87,6 +88,11 @@ export default function ProfileScreen() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  // Phone Auth State
+  const [confirm, setConfirm] = useState<any>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
 
   // Sync khi profile context thay đổi (lần đầu load từ DB)
   useEffect(() => {
@@ -243,6 +249,62 @@ export default function ProfileScreen() {
       return;
     }
 
+    if (phone.trim() && !/^(03|05|07|08|09)\d{8}$/.test(phone.trim().replace(/\s+/g, ""))) {
+      showModal({
+        title: "Số điện thoại không hợp lệ",
+        message: "Vui lòng nhập đúng số điện thoại Việt Nam (10 số, bắt đầu bằng 03, 05, 07, 08, 09).",
+        iconName: "alert-circle-outline",
+        iconColor: "#F57C00",
+        buttons: [{ text: "Đã hiểu", style: "primary" }],
+      });
+      return;
+    }
+
+    if (phone.trim() && phone !== profile.phone) {
+      setSaving(true);
+      try {
+        const formattedPhone = "+84" + phone.trim().substring(1);
+        const confirmation = await auth().signInWithPhoneNumber(formattedPhone);
+        setConfirm(confirmation);
+      } catch (err: any) {
+        showModal({
+          title: "Lỗi gửi SMS",
+          message: err.message || "Không thể gửi SMS. Kiểm tra lại kết nối.",
+          iconName: "close-circle-outline",
+          iconColor: "#D32F2F",
+          buttons: [{ text: "Đóng", style: "cancel" }],
+        });
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    await handleSaveToDB();
+  };
+
+  const handleConfirmOtp = async () => {
+    if (!otpCode || otpCode.length < 6) return;
+    setOtpLoading(true);
+    try {
+      await confirm.confirm(otpCode);
+      setConfirm(null);
+      setOtpCode("");
+      await handleSaveToDB();
+    } catch (err: any) {
+      showModal({
+        title: "Sai mã OTP",
+        message: "Mã xác thực không đúng. Vui lòng thử lại.",
+        iconName: "close-circle-outline",
+        iconColor: "#D32F2F",
+        buttons: [{ text: "Đóng", style: "cancel" }],
+      });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleSaveToDB = async () => {
     setSaving(true);
     try {
       const fields = {
@@ -285,6 +347,47 @@ export default function ProfileScreen() {
         config={modalConfig}
         onClose={hideModal}
       />
+
+      {/* OTP Modal */}
+      <Modal visible={!!confirm} transparent animationType="fade">
+        <View style={modalStyles.overlay}>
+          <View style={modalStyles.card}>
+            <View style={modalStyles.iconContainer}>
+              <Ionicons name="chatbubble-ellipses-outline" size={48} color="#C67C4E" />
+            </View>
+            <Text style={modalStyles.title}>Nhập mã OTP</Text>
+            <Text style={modalStyles.message}>Mã OTP gồm 6 số đã được gửi đến số {phone}</Text>
+            <TextInput
+              style={[field.inputRow, { width: "100%", textAlign: "center", fontSize: 24, letterSpacing: 8, marginBottom: 20 }]}
+              placeholder="000000"
+              keyboardType="number-pad"
+              maxLength={6}
+              value={otpCode}
+              onChangeText={setOtpCode}
+            />
+            <View style={modalStyles.buttonContainer}>
+              <TouchableOpacity
+                style={[modalStyles.button, modalStyles.btnPrimary, otpLoading && { opacity: 0.7 }]}
+                onPress={handleConfirmOtp}
+                disabled={otpLoading}
+              >
+                {otpLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={[modalStyles.buttonText, modalStyles.txtPrimary]}>Xác nhận</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[modalStyles.button, modalStyles.btnCancel]}
+                onPress={() => setConfirm(null)}
+                disabled={otpLoading}
+              >
+                <Text style={[modalStyles.buttonText, modalStyles.txtCancel]}>Hủy</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Nav Bar ── */}
       <View style={styles.navBar}>
